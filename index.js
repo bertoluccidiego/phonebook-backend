@@ -1,8 +1,22 @@
 const express = require('express');
+const morgan = require('morgan');
 
 const app = express();
 
+morgan.token('content', (request, response) => {
+  if (Object.keys(request.body).length > 0) {
+    return JSON.stringify(request.body);
+  }
+
+  return ' ';
+});
+
 app.use(express.json());
+app.use(
+  morgan(
+    ':method :url :status :res[content-length] - :response-time ms :content'
+  )
+);
 
 function generateId() {
   return Math.round(Math.random() * 1000000);
