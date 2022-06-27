@@ -2,12 +2,19 @@ const express = require('express');
 
 const app = express();
 
+app.use(express.json());
+
+function generateId() {
+  return Math.round(Math.random() * 1000000);
+}
+
 let persons = [
   { id: 1, name: 'Arto Hellas', number: '040-123456' },
   { id: 2, name: 'Ada Lovelace', number: '39-44-5323523' },
   { id: 3, name: 'Dan Abramov', number: '12-43-234345' },
   { id: 4, name: 'Mary Poppendieck', number: '39-23-6423122' },
 ];
+
 app.get('/api/persons', (request, response) => {
   response.json(persons);
 });
@@ -40,6 +47,31 @@ app.delete('/api/persons/:id', (request, response) => {
   persons = persons.filter((p) => p.id === id);
 
   return response.status(204).end();
+});
+
+app.post('/api/persons/', (request, response) => {
+  const { body } = request;
+
+  if (!body.name) {
+    return response.status(400).json({ error: 'name not provided' });
+  }
+
+  if (!body.number) {
+    return response.status(400).json({ error: 'number not provided' });
+  }
+
+  if (persons.find((p) => p.name === body.name)) {
+    return response.status(400).json({ error: 'person already exists' });
+  }
+
+  const newPerson = {
+    id: generateId(),
+    name: body.name,
+    number: body.number,
+  };
+
+  persons = persons.concat(newPerson);
+  return response.json(newPerson);
 });
 
 const PORT = 3001;
