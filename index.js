@@ -1,6 +1,10 @@
+require('dotenv').config();
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
+const mongoose = require('mongoose');
+
+const Person = require('./models/person');
 
 const app = express();
 
@@ -21,6 +25,18 @@ app.use(
 );
 app.use(express.static('build'));
 
+const url = process.env.MONGODB_URI;
+
+console.log(`Connecting to ${url}`);
+mongoose
+  .connect(url)
+  .then(() => {
+    console.log('Connected to MongoDB');
+  })
+  .catch((error) => {
+    console.log(`Error connecting to MongoDB: ${error}`);
+  });
+
 function generateId() {
   return Math.round(Math.random() * 1000000);
 }
@@ -33,7 +49,11 @@ let persons = [
 ];
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons);
+  Person
+    .find({})
+    .then((fetchedPersons) => {
+      response.json(fetchedPersons);
+    })
 });
 
 app.get('/api/persons/:id', (request, response) => {
@@ -77,21 +97,19 @@ app.post('/api/persons/', (request, response) => {
     return response.status(400).json({ error: 'number not provided' });
   }
 
-  if (persons.find((p) => p.name === body.name)) {
-    return response.status(400).json({ error: 'person already exists' });
-  }
-
-  const newPerson = {
-    id: generateId(),
+  const newPerson = new Person({
     name: body.name,
     number: body.number,
-  };
+  });
 
-  persons = persons.concat(newPerson);
-  return response.json(newPerson);
+  newPerson
+    .save()
+    .then((savedPerson) => {
+      response.json(savedPerson);
+    });
 });
 
-const PORT = process.env.PORT || 3001;
+const { PORT } = process.env;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
